@@ -10,3 +10,9 @@ I'm mainly learning the **Community Version**.
 
 > Videos:
 > 1. https://www.youtube.com/watch?v=rUsUrbWb2D4&ab_channel=BenjaminHackl
+
+To Activate the venv, run:
+
+```bash
+$ source venv/bin/activate
+```
