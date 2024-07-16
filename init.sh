@@ -1,0 +1,1 @@
+bash/rc/init.sh
