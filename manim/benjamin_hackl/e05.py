@@ -76,7 +76,28 @@ class NewtonIteration(Scene):
         self.f = lambda x: (x + 6) * (x + 3) * x * (x - 3) * (x - 6) / 300
         curve = self.axes.plot(self.f, color=RED)
         self.cursor_dot = Dot(color=YELLOW)
+
+        # In order for the code to work, needed to update the code in:
+        #   manim/mobject/opengl/opengl_vectorized_mobject.py
+        # See https://github.com/ManimCommunity/manim/issues/3562.
+        self.x_number = DecimalNumber(
+            self.cursor_dot.get_x(),
+            color=RED,
+            num_decimal_places=3,
+            show_ellipsis=True,
+        )
+
+        def update_x_number(mob):
+            x = self.cursor_dot.get_x()
+            mob.set_value(x)
+            mob.next_to(self.cursor_dot)
+
+        self.x_number.next_to(self.cursor_dot, RIGHT + DOWN)
+        self.x_number.add_updater(lambda mob: mob.set_value(self.cursor_dot.get_center()[0]))
+        self.x_number.add_updater(lambda mob: mob.next_to(self.cursor_dot, RIGHT + DOWN))
+        self.x_number.update()
         self.play(Create(self.axes), Create(curve), FadeIn(self.cursor_dot))
+        self.play(Create(self.x_number))
         self.interactive_embed()
 
     def on_key_press(self, symbol, modifiers):
