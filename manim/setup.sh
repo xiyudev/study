@@ -15,6 +15,9 @@ sudo apt update
 # This list below is from the official website https://docs.manim.community/en/stable/installation/linux.html.
 sudo apt install build-essential python3-dev libcairo2-dev libpango1.0-dev ffmpeg
 
+# To allow using OpenGL renderer in WSL.
+sudo apt install xvfb -y
+
 # Create a virtual environment
 if [ ! -d "venv" ]; then
     python3 -m venv venv
