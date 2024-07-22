@@ -1,5 +1,6 @@
 #!/bin/bash -ex
-# Set up the environment for running manim.
+# Set up the environment for running manimce - the Community Version.
+#
 # This script:
 # - Installs the necessary system packages.
 # - Creates a virtual environment (if not already created).
