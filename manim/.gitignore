@@ -2,3 +2,5 @@ __pycache__
 *.pyc
 media/
 venv/
+manimgl_clone/
+manimgl_videos/
