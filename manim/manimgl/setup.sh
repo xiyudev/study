@@ -1,12 +1,15 @@
-#!/bin/zsh -ex
+#!/bin/bash -ex
 # Set up the environment for running manimgl: https://github.com/3b1b/manim.
+#
+# Instruction: https://3b1b.github.io/manim/getting_started/installation.html
 #
 # This script:
 # - Installs the necessary system packages.
 # - Creates a virtual environment (if not already created).
 # - Installs the required Python packages (if not already installed).
 
-brew install ffmpeg mactex pkg-config
+sudo apt update
+sudo apt install ffmpeg
 
 # Create a virtual environment
 if [ ! -d "venv" ]; then
