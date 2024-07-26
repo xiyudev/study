@@ -3296,12 +3296,13 @@ class CircularPolarizationOneVec(InteractiveScene):
     def construct(self):
         # Waves
         axes, plane = get_axes_and_plane(
-            x_range=(0, 4),
+            x_range=(0, 6),
         )
         self.add(axes, plane)
         speed = 1
         wave_len = 3.0
         sample_resolution = 1
+        x_density = 20
         self.y_phase_tracker = ValueTracker(0)
         self.z_phase_tracker = ValueTracker(0)
 
@@ -3321,9 +3322,11 @@ class CircularPolarizationOneVec(InteractiveScene):
             # y_phase=PI / 2,
             sample_resolution=sample_resolution,
         )
-        te_vector_wave = OscillatingFieldWave(axes, self.te_wave)
+        te_vector_wave = OscillatingFieldWave(axes, self.te_wave,
+            x_density=x_density,
+        )
         te_wave_opacity_tracker = ValueTracker(0)
-        te_vector_opacity_tracker = ValueTracker(1)
+        te_vector_opacity_tracker = ValueTracker(0.8)
         self.te_wave.add_updater(lambda m: m.set_stroke(opacity=te_wave_opacity_tracker.get_value()))
         te_vector_wave.add_updater(lambda m: m.set_stroke(opacity=te_vector_opacity_tracker.get_value()))
 
@@ -3338,9 +3341,11 @@ class CircularPolarizationOneVec(InteractiveScene):
             z_amplitude=0.5,
             sample_resolution=sample_resolution,
         )
-        tm_vector_wave = OscillatingFieldWave(axes, self.tm_wave)
+        tm_vector_wave = OscillatingFieldWave(axes, self.tm_wave,
+            x_density=x_density,
+        )
         tm_wave_opacity_tracker = ValueTracker(0)
-        tm_vector_opacity_tracker = ValueTracker(1)
+        tm_vector_opacity_tracker = ValueTracker(0.8)
         self.tm_wave.add_updater(lambda m: m.set_stroke(opacity=tm_wave_opacity_tracker.get_value()))
         tm_vector_wave.add_updater(lambda m: m.set_stroke(opacity=tm_vector_opacity_tracker.get_value()))
 
@@ -3356,7 +3361,9 @@ class CircularPolarizationOneVec(InteractiveScene):
             # y_phase=PI / 2,
             sample_resolution=sample_resolution,
         )
-        pol_vector_wave = OscillatingFieldWave(axes, self.pol_wave)
+        pol_vector_wave = OscillatingFieldWave(axes, self.pol_wave,
+            x_density=x_density,
+        )
         pol_wave_opacity_tracker = ValueTracker(0)
         pol_vector_opacity_tracker = ValueTracker(1)
         self.pol_wave.add_updater(lambda m: m.set_stroke(opacity=pol_wave_opacity_tracker.get_value()))
@@ -3368,23 +3375,25 @@ class CircularPolarizationOneVec(InteractiveScene):
         self.pol_wave.add_updater(update_z_phase)
         self.add(self.pol_wave, pol_vector_wave)
 
-        self.play(
-            self.frame.animate.reorient(22, 69, 0).move_to([0.41, -0.67, -0.1]).set_height(10.31),
-            # te_wave_opacity_tracker.animate.set_value(1).set_anim_args(time_span=(1, 2)),
-            te_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
-            # tm_wave_opacity_tracker.animate.set_value(1).set_anim_args(time_span=(1, 2)),
-            tm_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
-            # pol_wave_opacity_tracker.animate.set_value(1).set_anim_args(time_span=(1, 2)),
-            # pol_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
-            run_time=2
-        )
-        self.play(
-            self.frame.animate.reorient(-67, 68, 0).move_to([0.41, -0.67, -0.1]),
-            run_time=2
-        )
+        # self.play(
+        #     self.frame.animate.reorient(22, 69, 0).move_to([0.41, -0.67, -0.1]).set_height(10.31),
+        #     # te_wave_opacity_tracker.animate.set_value(1).set_anim_args(time_span=(1, 2)),
+        #     te_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
+        #     # tm_wave_opacity_tracker.animate.set_value(1).set_anim_args(time_span=(1, 2)),
+        #     tm_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
+        #     # pol_wave_opacity_tracker.animate.set_value(1).set_anim_args(time_span=(1, 2)),
+        #     # pol_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
+        #     run_time=2
+        # )
+        # self.play(
+        #     self.frame.animate.reorient(-67, 68, 0).move_to([0.41, -0.67, -0.1]),
+        #     run_time=2
+        # )
         self.play(
             # self.y_phase_tracker.animate.set_value(PI).set_anim_args(time_span=(1, 2)),
             self.y_phase_tracker.animate.set_value(PI / 2),
+            # te_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
+            # tm_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
             # pol_wave_opacity_tracker.animate.set_value(1.0).set_anim_args(time_span=(1, 2)),
             pol_vector_opacity_tracker.animate.set_value(1.0).set_anim_args(time_span=(1, 2)),
             run_time=6
@@ -3400,6 +3409,13 @@ class CircularPolarizationOneVec(InteractiveScene):
             self.te_wave.toggle_clock()
             self.tm_wave.toggle_clock()
             self.pol_wave.toggle_clock()
-        if char == "i":
-            self.y_phase_tracker.increment_value(PI / 4),
+        if char == "y":
+            self.play(
+                self.y_phase_tracker.animate.increment_value(PI / 8),
+            )
+        if char == "z":
+            self.play(
+                self.z_phase_tracker.animate.increment_value(PI / 8),
+            )
         super().on_key_press(symbol, modifiers)
+
