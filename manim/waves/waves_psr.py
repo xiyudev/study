@@ -651,6 +651,7 @@ class PSRInput(InteractiveScene):
         self.angle_tracker = ValueTracker(PI / 6)
         self.y_phase_tracker = ValueTracker(0)
         self.z_phase_tracker = ValueTracker(0)
+        self.twisting_rate_tracker = ValueTracker(0)
 
         def update_y_phase(m):
             m.y_phase = self.y_phase_tracker.get_value()
@@ -664,6 +665,9 @@ class PSRInput(InteractiveScene):
         def update_z_amp(m):
             m.z_amplitude = amplitude * np.sin(self.angle_tracker.get_value())
 
+        def update_twist_rate(m):
+            m.twist_rate = self.twisting_rate_tracker.get_value()
+
         self.te_wave = OscillatingWave(
             axes,
             wave_len=wave_len,
@@ -673,6 +677,7 @@ class PSRInput(InteractiveScene):
             z_amplitude=0,
             # y_phase=PI / 2,
             sample_resolution=sample_resolution,
+            twist_rate=self.twisting_rate_tracker.get_value(),
         )
         te_vector_wave = OscillatingFieldWave(
             axes,
@@ -680,7 +685,7 @@ class PSRInput(InteractiveScene):
             x_density=x_density,
         )
         te_wave_opacity_tracker = ValueTracker(0)
-        te_vector_opacity_tracker = ValueTracker(0.1)
+        te_vector_opacity_tracker = ValueTracker(0.5)
         self.te_wave.add_updater(
             lambda m: m.set_stroke(opacity=te_wave_opacity_tracker.get_value())
         )
@@ -698,6 +703,7 @@ class PSRInput(InteractiveScene):
             y_amplitude=0,
             z_amplitude=amplitude * np.sin(self.angle_tracker.get_value()),
             sample_resolution=sample_resolution,
+            twist_rate=self.twisting_rate_tracker.get_value(),
         )
         tm_vector_wave = OscillatingFieldWave(
             axes,
@@ -705,7 +711,7 @@ class PSRInput(InteractiveScene):
             x_density=x_density,
         )
         tm_wave_opacity_tracker = ValueTracker(0)
-        tm_vector_opacity_tracker = ValueTracker(0.1)
+        tm_vector_opacity_tracker = ValueTracker(0.5)
         self.tm_wave.add_updater(
             lambda m: m.set_stroke(opacity=tm_wave_opacity_tracker.get_value())
         )
@@ -747,6 +753,8 @@ class PSRInput(InteractiveScene):
         self.tm_wave.add_updater(update_z_phase)
         self.te_wave.add_updater(update_y_amp)
         self.tm_wave.add_updater(update_z_amp)
+        self.te_wave.add_updater(update_twist_rate)
+        self.tm_wave.add_updater(update_twist_rate)
         self.add(self.pol_wave, pol_vector_wave)
 
         # self.wait(3)
@@ -779,9 +787,21 @@ class PSRInput(InteractiveScene):
             self.play(
                 self.z_phase_tracker.animate.increment_value(PI / 8),
             )
-        if char == "a":
+        if char == "a" and modifiers == 0:
+            self.play(
+                self.angle_tracker.animate.increment_value(-PI / 12),
+            )
+        if char == "a" and modifiers == 1:
             self.play(
                 self.angle_tracker.animate.increment_value(PI / 12),
+            )
+        if char == "t" and modifiers == 0:
+            self.play(
+                self.twisting_rate_tracker.animate.increment_value(0.05),
+            )
+        if char == "t" and modifiers == 1:
+            self.play(
+                self.twisting_rate_tracker.animate.increment_value(-0.05),
             )
         super().on_key_press(symbol, modifiers)
 
