@@ -330,6 +330,31 @@ class OscillatingFieldWave(GraphAsVectorField):
         return self.wave.offset + self.axes.x_axis.n2p(self.sample_xs)
 
 
+class OscillatingFieldWaveYProjection(GraphAsVectorField):
+    def __init__(self, axes, wave, **kwargs):
+        self.wave = wave
+        if "stroke_color" not in kwargs:
+            kwargs["stroke_color"] = wave.get_color()
+        # super().__init__(axes=axes, graph_func=lambda x: wave.xt_to_yz(x, wave.time), **kwargs)
+        super().__init__(axes=axes, graph_func=lambda x: self.graph_func_y(x, self.wave.time), **kwargs)
+
+    def graph_func_y(self, x, time):
+        y, z = self.wave.xt_to_yz(x, time)
+        return y, 0
+
+class OscillatingFieldWaveZProjection(GraphAsVectorField):
+    def __init__(self, axes, wave, **kwargs):
+        self.wave = wave
+        if "stroke_color" not in kwargs:
+            kwargs["stroke_color"] = wave.get_color()
+        # super().__init__(axes=axes, graph_func=lambda x: wave.xt_to_yz(x, wave.time), **kwargs)
+        super().__init__(axes=axes, graph_func=lambda x: self.graph_func_z(x, wave.time), **kwargs)
+
+    def graph_func_z(self, x, time):
+        y, z = self.wave.xt_to_yz(x, time)
+        return 0, z
+
+
 class CircularPolarizationOneVec(InteractiveScene):
     default_frame_orientation = (-33, 85)
 
@@ -581,7 +606,6 @@ class PSR(InteractiveScene):
         pol_vector_wave.add_updater(
             lambda m: m.set_stroke(opacity=pol_vector_opacity_tracker.get_value())
         )
-
         self.te_wave.add_updater(update_y_phase)
         self.tm_wave.add_updater(update_z_phase)
         # self.pol_wave.add_updater(update_y_phase)
@@ -806,6 +830,233 @@ class PSRInput(InteractiveScene):
         super().on_key_press(symbol, modifiers)
 
 
+class PSRInput2(InteractiveScene):
+    default_frame_orientation = (-33, 85)
+
+    def construct(self):
+        # Waves
+        axes, plane = get_axes_and_plane(
+            # x_range=(0, 8),
+            x_range=(0, 3),
+        )
+        self.add(axes, plane)
+        speed = 1
+        wave_len = 3.0
+        sample_resolution = 1
+        amplitude = 0.5
+        # The angle of the electric field vector.
+        self.angle_tracker = ValueTracker(PI / 6)
+        self.y_phase_tracker = ValueTracker(0)
+        self.z_phase_tracker = ValueTracker(0)
+        self.twisting_rate_tracker = ValueTracker(0)
+        self.out_te_opacity_tracker = ValueTracker(0)
+        self.out_tm_opacity_tracker = ValueTracker(0)
+        self.x_density_tracker = ValueTracker(10)
+
+        def update_y_phase(m):
+            m.y_phase = self.y_phase_tracker.get_value()
+
+        def update_z_phase(m):
+            m.z_phase = self.z_phase_tracker.get_value()
+
+        def update_y_amp(m):
+            m.y_amplitude = amplitude * np.cos(self.angle_tracker.get_value())
+
+        def update_z_amp(m):
+            m.z_amplitude = amplitude * np.sin(self.angle_tracker.get_value())
+
+        def update_twist_rate(m):
+            m.twist_rate = self.twisting_rate_tracker.get_value()
+
+        self.te_wave = OscillatingWave(
+            axes,
+            wave_len=wave_len,
+            speed=speed,
+            color=BLUE,
+            y_amplitude=amplitude * np.cos(self.angle_tracker.get_value()),
+            z_amplitude=0,
+            # y_phase=PI / 2,
+            sample_resolution=sample_resolution,
+            twist_rate=self.twisting_rate_tracker.get_value(),
+        )
+        te_vector_wave = OscillatingFieldWave(
+            axes,
+            self.te_wave,
+            x_density=self.x_density_tracker.get_value(),
+        )
+        self.te_wave_opacity_tracker = ValueTracker(0)
+        self.te_vector_opacity_tracker = ValueTracker(0.3)
+        self.te_wave.add_updater(
+            lambda m: m.set_stroke(opacity=self.te_wave_opacity_tracker.get_value())
+        )
+        te_vector_wave.add_updater(
+            lambda m: m.set_stroke(opacity=self.te_vector_opacity_tracker.get_value())
+        )
+
+        self.add(self.te_wave, te_vector_wave)
+
+        self.tm_wave = OscillatingWave(
+            axes,
+            wave_len=wave_len,
+            speed=speed,
+            color=RED,
+            y_amplitude=0,
+            z_amplitude=amplitude * np.sin(self.angle_tracker.get_value()),
+            sample_resolution=sample_resolution,
+            twist_rate=self.twisting_rate_tracker.get_value(),
+        )
+        tm_vector_wave = OscillatingFieldWave(
+            axes,
+            self.tm_wave,
+            x_density=self.x_density_tracker.get_value(),
+        )
+        self.tm_wave_opacity_tracker = ValueTracker(0)
+        self.tm_vector_opacity_tracker = ValueTracker(0.3)
+        self.tm_wave.add_updater(
+            lambda m: m.set_stroke(opacity=self.tm_wave_opacity_tracker.get_value())
+        )
+        tm_vector_wave.add_updater(
+            lambda m: m.set_stroke(opacity=self.tm_vector_opacity_tracker.get_value())
+        )
+
+        self.add(self.tm_wave, tm_vector_wave)
+
+        # self.pol_wave = OscillatingWave(
+        #     axes,
+        #     wave_len=wave_len,
+        #     speed=speed,
+        #     color=PURPLE,
+        #     y_amplitude=0.5,
+        #     z_amplitude=0.5,
+        #     # y_phase=PI / 2,
+        #     sample_resolution=sample_resolution,
+        # )
+        self.pol_wave = OscillatingWaveSum(
+            axes,
+            waves=[self.te_wave, self.tm_wave],
+        )
+        pol_vector_wave = OscillatingFieldWave(
+        # pol_vector_wave = OscillatingFieldWaveLastSample(
+            axes,
+            self.pol_wave,
+            x_density=self.x_density_tracker.get_value(),
+            stroke_width=3,
+        )
+        pol_wave_opacity_tracker = ValueTracker(0)
+        pol_vector_opacity_tracker = ValueTracker(1)
+        self.pol_wave.add_updater(
+            lambda m: m.set_stroke(opacity=pol_wave_opacity_tracker.get_value())
+        )
+        pol_vector_wave.add_updater(
+            lambda m: m.set_stroke(opacity=pol_vector_opacity_tracker.get_value())
+        )
+
+        self.pol_vector_wave_y = OscillatingFieldWaveYProjection(
+            axes,
+            self.pol_wave,
+            stroke_color=LIGHT_BROWN,
+            x_density=self.x_density_tracker.get_value(),
+        )
+        self.pol_vector_wave_z = OscillatingFieldWaveZProjection(
+            axes,
+            self.pol_wave,
+            stroke_color=LIGHT_BROWN,
+            x_density=self.x_density_tracker.get_value(),
+        )
+        self.pol_y_vector_opacity_tracker = ValueTracker(1)
+        self.pol_vector_wave_y.add_updater(
+            lambda m: m.set_stroke(opacity=self.pol_y_vector_opacity_tracker.get_value())
+        )
+        self.pol_z_vector_opacity_tracker = ValueTracker(1)
+        self.pol_vector_wave_z.add_updater(
+            lambda m: m.set_stroke(opacity=self.pol_z_vector_opacity_tracker.get_value())
+        )
+
+        self.te_wave.add_updater(update_y_phase)
+        self.tm_wave.add_updater(update_z_phase)
+        self.te_wave.add_updater(update_y_amp)
+        self.tm_wave.add_updater(update_z_amp)
+        self.te_wave.add_updater(update_twist_rate)
+        self.tm_wave.add_updater(update_twist_rate)
+        self.add(self.pol_wave, pol_vector_wave, self.pol_vector_wave_y, self.pol_vector_wave_z)
+
+        # self.wait(3)
+        self.play(
+            # self.y_phase_tracker.animate.set_value(PI).set_anim_args(time_span=(1, 2)),
+            # self.y_phase_tracker.animate.set_value(PI / 2),
+            # te_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
+            # tm_vector_opacity_tracker.animate.set_value(0.5).set_anim_args(time_span=(1, 2)),
+            # pol_wave_opacity_tracker.animate.set_value(1.0).set_anim_args(time_span=(1, 2)),
+            self.angle_tracker.animate.set_value(PI / 6 * 2),
+            pol_vector_opacity_tracker.animate.set_value(1.0).set_anim_args(time_span=(1, 2)),
+            run_time=3,
+        )
+        self.te_wave.stop_clock()
+        self.tm_wave.stop_clock()
+        self.pol_wave.stop_clock()
+
+    # Key actions
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        char = chr(symbol)
+        if char == "p":
+            self.te_wave.toggle_clock()
+            self.tm_wave.toggle_clock()
+            self.pol_wave.toggle_clock()
+        if char == "y" and modifiers == 0:
+            self.play(
+                self.y_phase_tracker.animate.increment_value(PI / 8),
+            )
+        if char == "y" and modifiers == 1:
+            self.play(
+                self.y_phase_tracker.animate.increment_value(-PI / 8),
+            )
+        if char == "z" and modifiers == 0:
+            self.play(
+                self.z_phase_tracker.animate.increment_value(PI / 8),
+            )
+        if char == "z" and modifiers == 1:
+            self.play(
+                self.z_phase_tracker.animate.increment_value(-PI / 8),
+            )
+        if char == "a" and modifiers == 0:
+            self.play(
+                self.angle_tracker.animate.increment_value(-PI / 12),
+            )
+        if char == "a" and modifiers == 1:
+            self.play(
+                self.angle_tracker.animate.increment_value(PI / 12),
+            )
+        if char == "t" and modifiers == 0:
+            self.play(
+                self.twisting_rate_tracker.animate.increment_value(0.05),
+            )
+        if char == "t" and modifiers == 1:
+            self.play(
+                self.twisting_rate_tracker.animate.increment_value(-0.05),
+            )
+        if char == "v" and modifiers == 0:
+            self.play(
+                self.te_vector_opacity_tracker.animate.set_value(0),
+                self.tm_vector_opacity_tracker.animate.set_value(0),
+            )
+        if char == "v" and modifiers == 1:
+            self.play(
+                self.te_vector_opacity_tracker.animate.set_value(1),
+                self.tm_vector_opacity_tracker.animate.set_value(1),
+            )
+        if char == "b" and modifiers == 0:
+            self.play(
+                self.pol_y_vector_opacity_tracker.animate.set_value(0),
+                self.pol_z_vector_opacity_tracker.animate.set_value(0),
+            )
+        if char == "b" and modifiers == 1:
+            self.play(
+                self.pol_y_vector_opacity_tracker.animate.set_value(1),
+                self.pol_z_vector_opacity_tracker.animate.set_value(1),
+            )
+
+        super().on_key_press(symbol, modifiers)
+
 class PSRRotateTM(InteractiveScene):
     default_frame_orientation = (-33, 85)
 
@@ -813,6 +1064,7 @@ class PSRRotateTM(InteractiveScene):
         # Waves
         axes, plane = get_axes_and_plane(
             x_range=(0, 6),
+            # x_range=(0, 0.1),
         )
         self.add(axes, plane)
         speed = 1
